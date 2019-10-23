@@ -1,0 +1,140 @@
+clear all
+close all
+clc
+
+
+% GIVEN
+%wing
+AR=10.1;                        %%all  the lengthare in m
+e=1;
+c=0.057;                    %%mean aerodynamic chord
+s=0.500;
+t=0.0025;
+%aw=[0:0.1:8];                       %wing angle of attack, degrees
+rho=200;                      %%density of balsa wood
+Sw= ((s)^2)/AR;
+Vw=t*Sw;
+Ww=rho*9.81*Vw;              %% weight of the wing, Newton
+
+%fuselage
+l=0.350;
+A=0.00009;                    %surface of fuselagesection, m^2
+Vf=A*l;
+Wf=rho*9.81*Vf;              %% weight of the fuselage, Newton
+
+%h tail
+Sh=0.2*Sw;
+st=0.16;
+ct=Sh/st;
+ih=4;
+ARh=(st^2)/Sh;
+Vht=Sh*t;
+Wht=Vht*rho*9.81;        %weight of the tail, Newton
+
+%v tail
+Sv=Sh/2;
+Vvt=Sv*t;
+wid=0.07;                %vertical tail width
+Wvt=Vvt*rho*9.81;
+
+%other data
+% value to obtain Vt=7;                         %estimated flight velocity, or trim velocity                      
+deda=0.1;
+dynpresr=0.9;
+cla=0.11;
+rhoair=1.225;
+Wa=0.005*9.81;                            %weight added on the tip to have stable plane
+W=(Wf+Ww+Wvt+Wht+Wa); 
+
+xle=0.16;
+xach=(l-3*(ct/4))/c;
+xacwb=(xle+c/4)./c;
+
+%%calculations
+%%we start from the SM calculated from the centre of . graviti and the
+%%aerodyn centre of the glider
+clawb=cla/(1+(57.3*cla)/(pi*AR*e));
+clah=cla/(1+(57.3*cla)/(pi*ARh*e));
+xac=(xacwb+(clah/clawb)*dynpresr*(Sh/Sw)*xach*(1-deda))/(1+(clah/clawb)*dynpresr*(Sh/Sw)*(1-deda));
+xcg=((Ww.*(xle+c/2)+Wht*(l-ct/2)+Wvt*(l-wid/2)+Wf*(l/2))/(Wf+Ww+Wvt+Wht+Wa))/c;   
+
+SM=xac-xcg;
+
+%%calculate the moment at zero-lift
+cLa=clawb+clah*dynpresr*(Sh/Sw)*(1-deda);
+cmih=-clah*dynpresr*(Sh/Sw).*(xach-xcg);
+cma=-SM.*cLa;
+Vc=((l-3*(ct/4)-xcg.*c)*Sh)/(c*Sw);
+%cmwb=0+clawb*a*(xcg-xacwb-Vc*(clah/clawb)*(1-deda))+Vc*clah*ih; this equal to 0 , for a flat plate with 0 inclination this is 0
+a=-(Vc.*clah*ih)./(clawb.*(xcg-xacwb-Vc*(clah/clawb)*(1-deda)));
+
+cm0=Vc.*clah*ih;
+cma=clawb.*(xcg-xacwb-Vc.*(clah/clawb)*(1-deda));
+
+%%as the final step, we calculate the Vinf of trimmed conditions
+
+cL=a.*cLa;
+a=a;
+Vt=sqrt((2*W)./(rhoair*Sw*cL));
+
+x=[0:0.1:7];
+y=[0];
+for i=1:length(x)
+    y(i)=0;
+end
+%ycm=cm0+cma.*x;
+
+
+plot(xle,Vt)
+%% Plots
+
+% Plots values in 3D
+%surf(alpha_wb, alpha_t, Vt)
+
+hold on
+%plot(xle*1000, 0, 'g*')
+plot(xcg*1000*c, 0, 'b*')   
+plot(xac*1000*c, 0, 'r*')
+plot(xacwb*1000*c, 0, 'g*')
+plot(xach*1000*c, 0, 'y*')
+legend("plane" , "CG", "AC", "AC_wb", "AC_t" )
+% wing
+width_w = c*1000;
+height_w = s*1000; 
+xCenter_w = (c/2 + xle)*1000;
+yCenter_w = 0; 
+xLeft_w = xle*1000;
+yBottom_w = -height_w/2;
+rectangle('Position', [xLeft_w, yBottom_w, width_w, height_w], 'EdgeColor', 'b', 'LineWidth', 2);
+% tail
+width_t = ct*1000; % whatever
+height_t = st*1000; % whatever...
+xCenter_t = l*1000 - width_t/2; % Wherever...
+yCenter_t = 0; % Wherever...
+xLeft_t = (l*1000- width_t);
+yBottom_t = -height_t/2;
+rectangle('Position', [xLeft_t, yBottom_t, width_t, height_t], 'EdgeColor', 'b', 'LineWidth', 2);
+% fuselage
+rectangle('Position', [0, 0, l*1000, 0], 'EdgeColor', 'b', 'LineWidth', 2);
+hold on
+% Plots interresting points
+
+ylim([-270,270]);
+xlabel("[mm]")
+ylabel("[mm]")
+grid on;
+           
+x=[0:0.1:7];
+y=[];
+for i=1:length(x)
+  y(i)=[0];
+end
+
+ycm=cm0+cma.*x;
+figure
+plot(x,y)
+hold on
+plot(x,ycm)
+%title('Moment coefficient')
+xlabel('Wing angle of attack')
+ylabel('moment coefficient')
